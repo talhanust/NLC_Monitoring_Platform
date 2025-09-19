@@ -1,77 +1,16 @@
 {
   "name": "@engineering-app/shared",
   "version": "1.0.0",
-  "description": "Shared utilities and types for engineering app",
+  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./types": {
-      "import": "./dist/types/index.js",
-      "require": "./dist/types/index.js",
-      "types": "./dist/types/index.d.ts"
-    },
-    "./utils": {
-      "import": "./dist/utils/index.js",
-      "require": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
-    },
-    "./constants": {
-      "import": "./dist/constants/index.js",
-      "require": "./dist/constants/index.js",
-      "types": "./dist/constants/index.d.ts"
-    },
-    "./validators": {
-      "import": "./dist/validators/index.js",
-      "require": "./dist/validators/index.js",
-      "types": "./dist/validators/index.d.ts"
-    }
-  },
-  "files": [
-    "dist/**/*",
-    "package.json",
-    "README.md"
-  ],
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "dev": "tsc --watch",
-    "clean": "rimraf dist",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist"
   },
-  "dependencies": {
-    "zod": "^3.22.4",
-    "date-fns": "^2.30.0",
-    "uuid": "^9.0.1"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/uuid": "^9.0.5",
-    "@types/jest": "^29.5.5",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.1",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.2.2"
-  },
-  "peerDependencies": {
-    "typescript": ">=5.0.0"
-  },
-  "keywords": [
-    "utilities",
-    "types",
-    "validators",
-    "shared",
-    "typescript"
-  ],
-  "author": "Your Name <your.email@example.com>",
-  "license": "MIT"
+    "typescript": "^5.2.2",
+    "rimraf": "^5.0.5"
+  }
 }
