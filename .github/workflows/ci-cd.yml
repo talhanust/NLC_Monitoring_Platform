@@ -30,7 +30,7 @@ jobs:
       run: rm -f package-lock.json
 
     - name: Install dependencies (generate lockfile)
-      run: npm install --workspaces
+      run: npm install --workspaces --package-lock-only
 
     - name: Commit package-lock.json
       run: |
@@ -55,7 +55,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
 
     - name: Install dependencies
       run: npm ci
@@ -82,7 +81,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
         
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -91,7 +89,7 @@ jobs:
         cache: 'pip'
         
     - name: Install Node dependencies (monorepo)
-      run: npm install --workspaces
+      run: npm ci --workspaces
       
     - name: Install Python dependencies
       run: |
@@ -114,12 +112,11 @@ jobs:
         flags: backend
         name: backend-coverage
 
-  # Job 3: Build All Packages
+  # 🔹 Job 3: Build All Packages
   build:
     name: Build Packages
     runs-on: ubuntu-latest
     needs: test
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -128,10 +125,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
         
     - name: Install dependencies (monorepo)
-      run: npm install --workspaces
+      run: npm ci --workspaces
       
     - name: Build shared package
       run: npm run build --workspace=@engineering-app/shared
@@ -146,14 +142,13 @@ jobs:
         path: packages/frontend/dist/
         retention-days: 7
 
-  # Job 4: Build Desktop Apps (Multiple OS)
+  # 🔹 Job 4: Build Desktop Apps (Multiple OS)
   build-desktop:
     name: Build Desktop App
     needs: build
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-        
     runs-on: ${{ matrix.os }}
     
     steps:
@@ -164,10 +159,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
         
     - name: Install dependencies (monorepo)
-      run: npm install --workspaces
+      run: npm ci --workspaces
       
     - name: Build shared package
       run: npm run build --workspace=@engineering-app/shared
