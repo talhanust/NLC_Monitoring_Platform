@@ -21,25 +21,15 @@ jobs:
       with:
         node-version: '18'
       
-    - name: Check if package-lock.json exists
-      id: check-lockfile
-      run: |
-        if [ -f "package-lock.json" ]; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-        fi
-      
     - name: Generate package-lock.json
-      if: steps.check-lockfile.outputs.exists == 'false'
       run: |
-        npm install
+        rm -f package-lock.json
+        npm install --workspaces
         
     - name: Commit package-lock.json
-      if: steps.check-lockfile.outputs.exists == 'false'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git config user.name "GitHub Action"
         git add package-lock.json
-        git commit -m "Auto-generate package-lock.json" || exit 0
+        git commit -m "Auto-generate package-lock.json [skip ci]" || echo "No changes to commit"
         git push
