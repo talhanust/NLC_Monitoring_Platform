@@ -1,11 +1,11 @@
 {
   "name": "@engineering-app/monorepo",
   "version": "1.0.0",
-  "description": "Engineering application monorepo with Electron desktop, React frontend, FastAPI backend, and shared utilities",
+  "description": "Engineering application monorepo with Electron desktop, React frontend, FastAPI backend, and shared utilities. Python dependencies are managed separately in requirements.txt files.",
   "private": true,
   "workspaces": [
     "packages/desktop",
-    "packages/frontend", 
+    "packages/frontend",
     "packages/backend",
     "packages/shared"
   ],
