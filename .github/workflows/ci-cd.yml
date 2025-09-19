@@ -25,6 +25,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
+        # ⚠️ no cache here, lockfile doesn’t exist yet
 
     - name: Clean old lockfile
       run: rm -f package-lock.json
