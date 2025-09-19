@@ -14,8 +14,47 @@ env:
   ELECTRON_BUILDER_CACHE: '~/.cache/electron-builder'
 
 jobs:
+  setup-and-cache:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Generate package-lock.json if missing
+      run: |
+        if [ ! -f "package-lock.json" ]; then
+          echo "package-lock.json not found, generating it..."
+          npm install --package-lock-only
+        else
+          echo "package-lock.json already exists"
+        fi
+
+    - name: Cache node modules
+      id: cache-deps
+      uses: actions/cache@v3
+      with:
+        path: |
+          node_modules
+          packages/frontend/node_modules
+          packages/desktop/node_modules
+          packages/shared/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
   lint-and-test:
     runs-on: ubuntu-latest
+    needs: setup-and-cache
     strategy:
       matrix:
         node-version: [18.x, 20.x]
@@ -32,6 +71,23 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
         cache-dependency-path: package-lock.json
+
+    - name: Restore cached dependencies
+      if: needs.setup-and-cache.outputs.cache-hit == 'true'
+      uses: actions/cache@v3
+      with:
+        path: |
+          node_modules
+          packages/frontend/node_modules
+          packages/desktop/node_modules
+          packages/shared/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Install dependencies
+      if: needs.setup-and-cache.outputs.cache-hit != 'true'
+      run: npm ci
 
     - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
@@ -51,9 +107,6 @@ jobs:
           python3-dev \
           tesseract-ocr \
           libtesseract-dev
-
-    - name: Install dependencies
-      run: npm ci
 
     - name: Run TypeScript type checking
       run: npm run type-check
@@ -78,7 +131,7 @@ jobs:
 
   build-and-package:
     runs-on: ${{ matrix.os }}
-    needs: lint-and-test
+    needs: [setup-and-cache, lint-and-test]
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -92,6 +145,19 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        cache-dependency-path: package-lock.json
+
+    - name: Restore cached dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          node_modules
+          packages/frontend/node_modules
+          packages/desktop/node_modules
+          packages/shared/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Setup Python
       uses: actions/setup-python@v4
