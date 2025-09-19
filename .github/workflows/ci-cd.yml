@@ -26,8 +26,8 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Install dependencies (monorepo)
+      run: npm install --workspaces
       
     - name: Lint JavaScript/TypeScript
       run: npm run lint
@@ -60,8 +60,8 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
         
-    - name: Install Node dependencies
-      run: npm ci
+    - name: Install Node dependencies (monorepo)
+      run: npm install --workspaces
       
     - name: Install Python dependencies
       run: |
@@ -100,8 +100,8 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Install dependencies (monorepo)
+      run: npm install --workspaces
       
     - name: Build shared package
       run: npm run build --workspace=@engineering-app/shared
@@ -136,8 +136,8 @@ jobs:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Install dependencies (monorepo)
+      run: npm install --workspaces
       
     - name: Build shared package
       run: npm run build --workspace=@engineering-app/shared
@@ -163,170 +163,3 @@ jobs:
         name: desktop-${{ matrix.os }}
         path: packages/desktop/release/
         retention-days: 30
-
-  # Job 5: Deploy to Staging (on develop branch)
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build, build-desktop]
-    if: github.ref == 'refs/heads/develop'
-    
-    steps:
-    - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: frontend-build
-        path: ./dist
-        
-    - name: Deploy to GitHub Pages (Staging)
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-        destination_dir: staging
-
-  # Job 6: Deploy to Production (on main branch)
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build, build-desktop]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Download frontend artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: frontend-build
-        path: ./dist
-        
-    - name: Deploy to GitHub Pages (Production)
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-
-  # Job 7: Create Release (on main branch with tags)
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: [build, build-desktop]
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Download all artifacts
-      uses: actions/download-artifact@v3
-      
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          desktop-windows-latest/**/*
-          desktop-macos-latest/**/*
-          desktop-ubuntu-latest/**/*
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      build-docker:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: [test, build]  # Wait for tests to pass
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ghcr.io/${{ github.repository }}/backend
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-        labels: |
-          org.opencontainers.image.title=Engineering App Backend
-          org.opencontainers.image.description=FastAPI backend for Engineering Application
-          org.opencontainers.image.vendor=${{ github.repository_owner }}
-          
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: packages/backend
-        file: packages/backend/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64,linux/arm64
-        
-    - name: Test Docker image
-      run: |
-        # Pull the image we just built
-        docker pull ghcr.io/${{ github.repository }}/backend:latest
-        
-        # Run container in background
-        docker run -d --name test-container -p 8000:8000 \
-          -e DEBUG=true \
-          ghcr.io/${{ github.repository }}/backend:latest
-        
-        # Wait for container to start
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:8000/health
-        
-        # Clean up
-        docker stop test-container
-        docker rm test-container
-        
-    - name: Image vulnerability scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ghcr.io/${{ github.repository }}/backend:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-            - name: Cache
-  uses: actions/cache@v4.2.4
-  with:
-    # A list of files, directories, and wildcard patterns to cache and restore
-    path: 
-    # An explicit key for restoring and saving the cache
-    key: 
-    # An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.
-    restore-keys: # optional
-    # The chunk size used to split up large files during upload, in bytes
-    upload-chunk-size: # optional
-    # An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved respectively on other platforms
-    enableCrossOsArchive: # optional, default is false
-    # Fail the workflow if cache entry is not found
-    fail-on-cache-miss: # optional, default is false
-    # Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache
-    lookup-only: # optional, default is false
-    # Run the post step to save the cache even if another step before fails
-    save-always: # optional, default is false
-          
