@@ -1,0 +1,45 @@
+name: Generate package-lock.json
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'package.json' ]
+  workflow_dispatch:
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+      
+    - name: Check if package-lock.json exists
+      id: check-lockfile
+      run: |
+        if [ -f "package-lock.json" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+      
+    - name: Generate package-lock.json
+      if: steps.check-lockfile.outputs.exists == 'false'
+      run: |
+        npm install
+        
+    - name: Commit package-lock.json
+      if: steps.check-lockfile.outputs.exists == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package-lock.json
+        git commit -m "Auto-generate package-lock.json" || exit 0
+        git push
