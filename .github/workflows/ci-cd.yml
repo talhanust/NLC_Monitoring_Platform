@@ -11,39 +11,70 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  # Job 1: Code Quality & Linting
-  code-quality:
-    name: Code Quality
+  # 🔹 Step 0: Ensure package-lock.json exists
+  generate-lockfile:
+    name: Ensure package-lock.json
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Generate package-lock.json if missing
+      run: |
+        if [ ! -f "package-lock.json" ]; then
+          echo "No lockfile found. Generating..."
+          npm install --workspaces
+        fi
+
+    - name: Commit package-lock.json
+      run: |
+        if [ -f "package-lock.json" ]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: auto-generate package-lock.json" || echo "No changes to commit"
+          git push
+        fi
+
+  # 🔹 Job 1: Code Quality & Linting
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: generate-lockfile
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        
-    - name: Install dependencies (monorepo)
-      run: npm install --workspaces
-      
+
+    - name: Install dependencies
+      run: npm ci
+
     - name: Lint JavaScript/TypeScript
       run: npm run lint
-      
+
     - name: Check Prettier formatting
       run: npm run format:check
-      
-    - name: TypeScript type checking
-      run: npm run type-check || true  # Continue on type errors for now
 
-  # Job 2: Test Suite
+    - name: TypeScript type checking
+      run: npm run type-check || true
+
+  # 🔹 Job 2: Test Suite
   test:
     name: Run Tests
     runs-on: ubuntu-latest
     needs: code-quality
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
