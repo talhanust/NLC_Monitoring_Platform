@@ -30,13 +30,11 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    - name: Generate package-lock.json if missing
+    - name: Ensure package-lock.json exists
       run: |
         if [ ! -f "package-lock.json" ]; then
           echo "package-lock.json not found, generating it..."
           npm install --package-lock-only
-        else
-          echo "package-lock.json already exists"
         fi
 
     - name: Cache node modules
@@ -86,8 +84,12 @@ jobs:
           ${{ runner.os }}-node-
 
     - name: Install dependencies
-      if: needs.setup-and-cache.outputs.cache-hit != 'true'
-      run: npm ci
+      run: |
+        if [ -f "package-lock.json" ]; then
+          npm ci
+        else
+          npm install
+        fi
 
     - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
@@ -128,6 +130,14 @@ jobs:
         file: packages/backend/coverage.xml
         flags: backend
         name: backend-coverage
+
+    - name: Run npm audit (safe mode)
+      run: |
+        if [ -f "package-lock.json" ]; then
+          npm audit --audit-level=moderate || true
+        else
+          echo "Skipping npm audit (no lockfile found)"
+        fi
 
   build-and-package:
     runs-on: ${{ matrix.os }}
@@ -183,7 +193,12 @@ jobs:
         choco install vcredist2015
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+        if [ -f "package-lock.json" ]; then
+          npm ci
+        else
+          npm install
+        fi
 
     - name: Build frontend
       run: npm run build:frontend
