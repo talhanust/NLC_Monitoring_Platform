@@ -31,25 +31,36 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    - name: Ensure package-lock.json exists
+    - name: Ensure package-lock.json exists for all packages
       run: |
-        if [ ! -f "package-lock.json" ]; then
-          echo "package-lock.json not found, generating it..."
-          npm install --package-lock-only
-        fi
+        for dir in ./ ./packages/frontend ./packages/desktop ./packages/shared; do
+          if [ -f "$dir/package.json" ]; then
+            cd $dir
+            if [ ! -f package-lock.json ]; then
+              echo "Generating package-lock.json in $dir"
+              npm install --package-lock-only
+            fi
+            cd - >/dev/null
+          fi
+        done
 
     - name: Commit and push package-lock.json if on main branch
       if: github.ref == 'refs/heads/main'
       run: |
-        if [ -n "$(git status --porcelain package-lock.json)" ]; then
-          echo "package-lock.json changed, committing..."
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        changed=false
+        for dir in ./ ./packages/frontend ./packages/desktop ./packages/shared; do
+          if [ -f "$dir/package-lock.json" ] && [ -n "$(git status --porcelain $dir/package-lock.json)" ]; then
+            git add $dir/package-lock.json
+            changed=true
+          fi
+        done
+        if [ "$changed" = true ]; then
           git commit -m "chore(ci): add/update package-lock.json [skip ci]"
           git push origin HEAD:${GITHUB_REF}
         else
-          echo "No changes to commit."
+          echo "No package-lock.json changes to commit."
         fi
 
     - name: Cache node modules
@@ -100,11 +111,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -f "package-lock.json" ]; then
-          npm ci
-        else
-          npm install
-        fi
+        for dir in ./ ./packages/frontend ./packages/desktop ./packages/shared; do
+          if [ -f "$dir/package-lock.json" ]; then
+            cd $dir
+            npm ci
+            cd - >/dev/null
+          fi
+        done
 
     - name: Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v4
@@ -148,11 +161,16 @@ jobs:
 
     - name: Run npm audit (safe mode)
       run: |
-        if [ -f "package-lock.json" ]; then
-          npm audit --audit-level=moderate || true
-        else
-          echo "Skipping npm audit (no lockfile found)"
-        fi
+        for dir in ./ ./packages/frontend ./packages/desktop ./packages/shared; do
+          if [ -f "$dir/package-lock.json" ]; then
+            cd $dir
+            echo "Running npm audit in $dir"
+            npm audit --audit-level=moderate || true
+            cd - >/dev/null
+          else
+            echo "Skipping npm audit in $dir (no lockfile)"
+          fi
+        done
 
   build-and-package:
     runs-on: ${{ matrix.os }}
@@ -209,11 +227,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        if [ -f "package-lock.json" ]; then
-          npm ci
-        else
-          npm install
-        fi
+        for dir in ./ ./packages/frontend ./packages/desktop ./packages/shared; do
+          if [ -f "$dir/package-lock.json" ]; then
+            cd $dir
+            npm ci
+            cd - >/dev/null
+          fi
+        done
 
     - name: Build frontend
       run: npm run build:frontend
@@ -268,20 +288,4 @@ jobs:
 
     - name: Upload Release Asset - Windows
       uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/nlc-monitoring-windows-latest/dist/*.exe
-        asset_name: nlc-monitoring-windows.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
-
-    - name: Upload Release Asset - macOS
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/nlc-monitoring-macos-latest/dist/*.dmg
-        asset_name: nlc-monitoring-macos.dmg
-        asset_content_type: application/x-apple-diskimage
+     
