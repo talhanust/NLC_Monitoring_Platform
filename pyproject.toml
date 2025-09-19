@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nlc-monitoring-backend"
+version = "1.0.0"
+description = "Backend for NLC Monitoring Platform"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "sqlcipher3==1.1.0",
+    "pydantic==2.5.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "black", "isort"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
