@@ -1,64 +1,25 @@
 {
   "name": "@engineering-app/frontend",
   "version": "1.0.0",
-  "description": "React frontend application for engineering app",
   "private": true,
-  "type": "module",
+  "main": "src/index.tsx",
   "scripts": {
-    "build": "tsc && vite build",
-    "dev": "vite",
-    "preview": "vite preview",
-    "clean": "rimraf dist",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit"
+    "dev": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --watchAll=false",
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx"
   },
   "dependencies": {
-    "@engineering-app/shared": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0",
-    "@tanstack/react-query": "^4.35.3",
-    "zustand": "^4.4.3",
-    "axios": "^1.5.0",
-    "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-dropdown-menu": "^2.0.6",
-    "@radix-ui/react-toast": "^1.1.5",
-    "lucide-react": "^0.287.0",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^1.14.0"
+    "react-scripts": "5.0.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.25",
-    "@types/react-dom": "^18.2.11",
-    "@vitejs/plugin-react-swc": "^3.4.0",
-    "vite": "^4.4.9",
-    "vitest": "^0.34.6",
-    "@vitest/ui": "^0.34.6",
-    "@vitest/coverage-v8": "^0.34.6",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^6.1.3",
-    "@testing-library/user-event": "^14.5.1",
-    "jsdom": "^22.1.0",
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31",
-    "tailwindcss": "^3.3.5",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.2.2"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "typescript": "^5.2.2",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0"
   }
 }
